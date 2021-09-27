@@ -12,11 +12,13 @@ export default class CqlProcessor {
    * @param {object} elmJson - The CQL library formatted in ELM JSON 
    * @param {object} valueSetJson - A value set cache which maps codes to clinical concepts
    * @param {object} parameters - Key:value pairs of parameters for the CQL library
+   * @param {object} elmJsonDependencies - Libraries referenced from within elmJson.
    */
-  constructor(elmJson, valueSetJson, parameters=null) {
+  constructor(elmJson, valueSetJson, parameters=null, elmJsonDependencies = {}) {
     this.patientSource = fhir.PatientSource.FHIRv401();
     this.repository  = new cql.Repository({
-      'FHIRHelpers': fhirHelpersJson
+      'FHIRHelpers': fhirHelpersJson,
+      ...elmJsonDependencies
     });
     this.library = new cql.Library(elmJson, this.repository);
     this.codeService = new cql.CodeService(valueSetJson);

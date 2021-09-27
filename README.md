@@ -1,4 +1,4 @@
-# cql-worker
+# CQL Worker
 A library for executing Clinical Quality Language (CQL) expressions asynchronously via Web Workers. This allows web applications to evaluate CQL expressions in a non-blocking manner. For examples where this can be useful, see the Alcohol Screening and Brief Intervention (ASBI) Clinical Decision Support (CDS) [Screening](https://github.com/asbi-cds-tools/asbi-screening-app) and [Intervention](https://github.com/asbi-cds-tools/asbi-intervention-app) apps.
 
 ## Underlying Technologies
@@ -13,19 +13,24 @@ All CQL calculations are executed using the [CQL Execution Engine](https://githu
 The [`cql-exec-fhir`](https://github.com/cqframework/cql-exec-fhir) is used to provide a FHIR-based data source for use with the CQL Execution Engine.
 
 ### Web Workers
-[Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) provide a means to offload CQL expression calculations to a separate thread. 
+[Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) provide a means to offload CQL expression calculations to a separate thread from within the browser.
 
-## Current Limitations
-This library has only been tested with [Webpack 4](https://v4.webpack.js.org/).
+### Node Worker Threads
+[Node Worker Threads](https://nodejs.org/api/worker_threads.html) are similar to Web Workers but are for use in the Node.js runtime environment.
 
-### Potential Future Improvements
-- [Webpack 5](https://webpack.js.org/) supposedly has better support for Web Workers but also includes several breaking changes when it comes to bundling Node.js applications for the web browser. It may be possible to expand `cql-workers` so that it can support both Webpack 4 and Webpack 5.
-- Node.js now includes support for [Worker threads](https://nodejs.org/api/worker_threads.html), which are similar to Web Workers but run in the Node.js environment. A possible future improvement could be expanding `cql-workers` to support Node.js Worker threads.
+### Current Limitations
+CQL Workers has been tested with the following environments and build tools:
+* [x] Browser with [Webpack 4](https://v4.webpack.js.org/) using [worker-loader](https://github.com/webpack-contrib/worker-loader).
+* [ ] [Webpack 5](https://webpack.js.org/) supposedly has [better support for Web Workers](https://webpack.js.org/guides/web-workers/) but also includes several breaking changes when it comes to bundling Node.js applications for the web browser. CQL Worker *should* work with Webpack 5, but it has not been tested. Please open an issue if you run into any problems.
+* [x] Node.js has been tested, but be sure to [set](./main.js#L7) the `isNodeJs` flag to `true`.
 
 ## Example Usage
+
+### Browser with Webpack 4
+
 ```javascript
 // See: https://github.com/webpack-contrib/worker-loader
-import Worker from "../../node_modules/cql-worker/src/cql.worker.js";
+import Worker from "<PATH-TO-NODE-MODULES>/cql-worker/src/cql.worker.js";
 import { initialzieCqlWorker } from 'cql-worker';
 
 // Define a web worker for evaluating CQL expressions
@@ -34,10 +39,10 @@ const cqlWorker = new Worker();
 // Initialize the cql-worker
 let [setupExecution, sendPatientBundle, evaluateExpression] = initialzieCqlWorker(cqlWorker);
 
-// Define `elmJson`, `valueSetJson`, and `cqlParameters`
+// Define `elmJson`, `valueSetJson`, `cqlParameters`, and `elmJsonDependencies`
 
 // Send the cqlWorker an initial message containing the ELM JSON representation of the CQL expressions
-setupExecution(elmJson, valueSetJson, cqlParameters);
+setupExecution(elmJson, valueSetJson, cqlParameters, elmJsonDependencies);
 
 // Create `patientBundle` to hold the patient's FHIR resources
 
@@ -50,6 +55,31 @@ let result = await evaluateExpression(namedExpression);
 ```
 
 See the ASBI CDS [Screening](https://github.com/asbi-cds-tools/asbi-screening-app) and [Intervention](https://github.com/asbi-cds-tools/asbi-intervention-app) apps for additional information for how to configure Webpack to properly package `cql-worker`.
+
+### Node.js
+Using CQL Workers with Node.js requires enabling the [`--experimental-json-modules`](https://nodejs.org/api/esm.html#esm_experimental_json_modules) flag.
+
+```javascript
+import { Worker } from 'worker_threads';
+import { initialzieCqlWorker } from 'cql-worker';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+let cqlWorker = new Worker(require.resolve('cql-worker/src/cql-worker-thread.js'));
+let [setupExecution, sendPatientBundle, evaluateExpression] = initialzieCqlWorker(cqlWorker, true);
+
+// Define `elmJson`, `valueSetJson`, and `cqlParameters`
+
+setupExecution(elmJson, valueSetJson, cqlParameters, elmJsonDependencies);
+
+// Create `patientBundle` to hold the patient's FHIR resources
+
+sendPatientBundle(patientBundle);
+
+// Define `namedExpression`, a string containing the name of a CQL expression
+
+let result = await evaluateExpression(namedExpression);
+```
 
 ## License
 (C) 2021 The MITRE Corporation. All Rights Reserved. Approved for Public Release: 20-0458. Distribution Unlimited.
