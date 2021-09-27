@@ -1,10 +1,10 @@
-// Need to call this from your code:
-// (see: https://github.com/webpack-contrib/worker-loader)
-// import Worker from "../../node_modules/cql-worker/src/cql.worker.js";
-// import { initialzieCqlWorker } from 'cql-worker';
-// const cqlWorker = new Worker();
-// let [setupExecution, sendPatientBundle, evaluateExpression] = initialzieCqlWorker(cqlWorker);
-export function initialzieCqlWorker(cqlWorker) {
+/**
+ * Initialize either a web worker or a node worker thread to execute CQL ("CQL Worker").
+ * @param {Object} cqlWorker - Created from `new Worker()`.
+ * @param {boolean} isNodeJs - Boolean indicating whether to initialize for node or web.
+ * @returns {Function[]} - An array of functions for using the initilized CQL Worker.
+ */
+export function initializeCqlWorker(cqlWorker, isNodeJs=false) {
 
   // Define an array to keep track of the expression messages sent to the Web Worker
   let messageArray = [
@@ -14,11 +14,14 @@ export function initialzieCqlWorker(cqlWorker) {
     }
   ];
 
-  // Define an event handler for when cqlWorker sends results back
-  cqlWorker.onmessage = function(event) {
-    // Unpack the message in the event
-    let expression = event.data.expression;
-    let result = event.data.result;
+  // Define an event handler for when cqlWorker sends results back.
+  // NOTE: Node service workers and web workers implement this differently.
+  // - https://nodejs.org/api/worker_threads.html
+  // - https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
+  const eventHandler = function(event) {
+    // Unpack the message from the incoming event.
+    let expression = isNodeJs ? event.expression : event.data.expression;
+    let result = isNodeJs ? event.result : event.data.result;
 
     // If the response is that cqlWorker is still waiting on the patient bundle, 
     // wait 100 ms and resend.
@@ -44,13 +47,23 @@ export function initialzieCqlWorker(cqlWorker) {
     }
   };
 
+  // Listen for incoming messages.
+  // NOTE: Node service workers and web workers implement this differently.
+  // - https://nodejs.org/api/worker_threads.html
+  // - https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
+  if (isNodeJs) {
+    cqlWorker.on('message', eventHandler);
+  } else {
+    cqlWorker.onmessage = eventHandler;
+  }
+
   // Send the cqlWorker an initial message containing the ELM JSON representation of the CQL expressions
-  let setupExecution = function(elmJson, valueSetJson, cqlParameters) {
-    cqlWorker.postMessage({elmJson: elmJson, valueSetJson: valueSetJson, parameters: cqlParameters});
+  const setupExecution = function(elmJson, valueSetJson, cqlParameters, elmJsonDependencies) { // TODO: Should have default parameter values here
+    cqlWorker.postMessage({elmJson: elmJson, valueSetJson: valueSetJson, parameters: cqlParameters, elmJsonDependencies: elmJsonDependencies});
   };
 
   // Send the cqlWorker a message containing the patient bundle of FHIR resources.
-  let sendPatientBundle = function(patientBundle) {
+  const sendPatientBundle = function(patientBundle) {
     cqlWorker.postMessage({patientBundle: patientBundle});
   };
 
@@ -59,7 +72,7 @@ export function initialzieCqlWorker(cqlWorker) {
    * @param {string} expression - The name of a CQL expression.
    * @returns {boolean} - A dummy return value.
    */
-  let evaluateExpression = function(expression) {
+  const evaluateExpression = async function(expression) {
     // If this expression is already on the message stack, return its index.
     let executingExpressionIndex = messageArray.map((msg,idx) => {
       if (msg.expression == expression) return idx;
@@ -82,6 +95,8 @@ export function initialzieCqlWorker(cqlWorker) {
       cqlWorker.postMessage({expression: expression});
       // Return a promise that can be resolved after the web worker returns the result
       return new Promise(resolve => messageArray[n-1].resolver = resolve);
+    } else {
+      return Promise.resolve(-1);
     }
   };
 
@@ -90,4 +105,10 @@ export function initialzieCqlWorker(cqlWorker) {
     sendPatientBundle,
     evaluateExpression
   ];
+}
+
+// Included for backwards compatibility, since the original releases included 
+// this misspelled version of the main function. 
+export function initialzieCqlWorker(cqlWorker, isNodeJs=false) {
+  return initializeCqlWorker(cqlWorker, isNodeJs);
 }

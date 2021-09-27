@@ -1,8 +1,10 @@
 
+import { parentPort } from 'worker_threads';
 import CqlProcessor from './CqlProcessor.js';
 var processor = {};
 
 /**
+ * TODO: Update this comment for node worker thread.
  * Define an event handler for when a message is sent to this web worker.
  * Three types of messages can be sent here.
  * 1. elmJson & valueSetJon - Logic and code libraries for initial setup
@@ -13,7 +15,7 @@ var processor = {};
  * as a message.
  * @param {object} rx - The message object being sent
  */
-onmessage = function(rx) {
+parentPort.onmessage = function(rx) {
   let elmJson;
   let valueSetJson;
   let patientBundle;
@@ -38,7 +40,7 @@ onmessage = function(rx) {
         result: 'WAITING_FOR_PATIENT_BUNDLE'
       }
     }
-    this.postMessage(tx); // send the result back
+    parentPort.postMessage(tx); // send the result back
   } else if ((patientBundle = rx.data.patientBundle) != null) {
     // If the message contains a patient bundle, load it.
     processor.loadBundle(patientBundle);
