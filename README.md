@@ -26,6 +26,8 @@ CQL Workers has been tested with the following environments and build tools:
 
 ## Example Usage
 
+CQL Worker is [published on npm](https://www.npmjs.com/package/cql-worker) and can be installed via: `npm install cql-worker`.
+
 ### Browser with Webpack 4
 
 ```javascript
