@@ -1,6 +1,6 @@
 {
   "name": "cql-worker",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "description": "A library for executing Clinical Quality Language (CQL) expressions asynchronously via web workers or node worker threads.",
   "main": "main.js",
@@ -12,7 +12,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "cql-exec-fhir": "^2.0.0",
-    "cql-execution": "^2.2.0"
+    "cql-exec-fhir": "^2.0.2",
+    "cql-execution": "^2.4.0"
   }
 }

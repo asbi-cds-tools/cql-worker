@@ -1,6 +1,6 @@
 import cql from 'cql-execution';
 import fhir from 'cql-exec-fhir';
-import fhirHelpersJson from './FHIRHelpers-4.0.1.json';
+import fhirHelpersJson from './FHIRHelpers-4.0.1.json.js';
 
 /**
  * Executes logical expression written in the Clinical Quality Language (CQL) against 

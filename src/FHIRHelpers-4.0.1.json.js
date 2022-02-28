@@ -1,4 +1,4 @@
-{
+export default {
    "library" : {
       "annotation" : [ {
          "translatorOptions" : "",
@@ -7057,5 +7057,5 @@
          } ]
       }
    }
-}
+};
 
