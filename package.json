@@ -14,6 +14,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "cql-exec-fhir": "^2.1.4",
-    "cql-execution": "^2.4.0"
+    "cql-execution": "^3.0.1"
   }
 }

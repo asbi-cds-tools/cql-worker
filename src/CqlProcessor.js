@@ -3,13 +3,13 @@ import fhir from 'cql-exec-fhir';
 import fhirHelpersJson from './FHIRHelpers-4.0.1.json.js';
 
 /**
- * Executes logical expression written in the Clinical Quality Language (CQL) against 
- * a bundle of patient data formatted as FHIR resources. 
+ * Executes logical expression written in the Clinical Quality Language (CQL) against
+ * a bundle of patient data formatted as FHIR resources.
  */
 export default class CqlProcessor {
   /**
    * Create a CQL Processor.
-   * @param {object} elmJson - The CQL library formatted in ELM JSON 
+   * @param {object} elmJson - The CQL library formatted in ELM JSON
    * @param {object} valueSetJson - A value set cache which maps codes to clinical concepts
    * @param {object} parameters - Key:value pairs of parameters for the CQL library
    * @param {object} elmJsonDependencies - Libraries referenced from within elmJson.
@@ -38,15 +38,15 @@ export default class CqlProcessor {
   }
 
   /**
-   * Evaluate an expression from the CQL library represented by elmJson against 
+   * Evaluate an expression from the CQL library represented by elmJson against
    * the patient bundle.
    * @param {string} expr - The name of an expression from elmJson
    * @returns {object} results - The results from executing the expression
    */
-  evaluateExpression(expr) {
+  async evaluateExpression(expr) {
     // Only try to evaluate an expression if we have a patient bundle loaded.
     if (this.patientSource._bundles && this.patientSource._bundles.length > 0) {
-      let results = this.executor.exec_expression(expr, this.patientSource);
+      let results = await this.executor.exec_expression(expr, this.patientSource);
       this.patientSource._index = 0; // HACK: rewind the patient source
       return results.patientResults[this.patientID][expr];
     } else return null;
