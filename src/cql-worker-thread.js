@@ -1,6 +1,5 @@
-
-import { parentPort } from 'worker_threads';
-import CqlProcessor from './CqlProcessor.js';
+import { parentPort } from "worker_threads";
+import CqlProcessor from "./CqlProcessor.js";
 var processor = {};
 
 /**
@@ -15,7 +14,7 @@ var processor = {};
  * as a message.
  * @param {object} rx - The message object being sent
  */
-parentPort.onmessage = async function(rx) {
+parentPort.onmessage = async function (rx) {
   let elmJson;
   let valueSetJson;
   let patientBundle;
@@ -26,30 +25,42 @@ parentPort.onmessage = async function(rx) {
   // For efficiency, first check if this is an expression message, since that is
   // the type called most often.
   if ((expression = rx.data.expression) != null) {
-    let tx;
+    let tx, result;
     if (processor.patientSource._bundles.length > 0) {
-      let result = await processor.evaluateExpression(expression);
+      if (expression == "__evaluate_library__") {
+        result = await processor.evaluateLibrary();
+      } else {
+         result = await processor.evaluateExpression(expression);
+      }
       tx = {
         expression: expression,
-        result: result
+        result: result,
       };
     } else {
       // If we don't have a bundle just send the expression back.
       tx = {
         expression: expression,
-        result: 'WAITING_FOR_PATIENT_BUNDLE'
-      }
+        result: "WAITING_FOR_PATIENT_BUNDLE",
+      };
     }
     parentPort.postMessage(tx); // send the result back
   } else if ((patientBundle = rx.data.patientBundle) != null) {
     // If the message contains a patient bundle, load it.
     processor.loadBundle(patientBundle);
-  } else if ((elmJson = rx.data.elmJson) != null && (valueSetJson = rx.data.valueSetJson) != null) { // TODO: Allow empty value sets and check elm dependencies
+  } else if (
+    (elmJson = rx.data.elmJson) != null &&
+    (valueSetJson = rx.data.valueSetJson) != null
+  ) {
+    // TODO: Allow empty value sets and check elm dependencies
     // If the message contains translated CQL (ELM JSON), use it to create a new
     // CQL Processor object.
     parameters = rx.data.parameters;
     elmJsonDependencies = rx.data.elmJsonDependencies;
-    processor = new CqlProcessor(elmJson, valueSetJson, parameters, elmJsonDependencies);
+    processor = new CqlProcessor(
+      elmJson,
+      valueSetJson,
+      parameters,
+      elmJsonDependencies
+    );
   }
-}
-
+};

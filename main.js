@@ -26,7 +26,7 @@ export function initializeCqlWorker(cqlWorker, isNodeJs=false) {
     // If the response is that cqlWorker is still waiting on the patient bundle, 
     // wait 100 ms and resend.
     if (result == 'WAITING_FOR_PATIENT_BUNDLE') {
-      setTimeout( () => cqlWorker.postMessage({expression: expression}), 100);
+      setTimeout( () => cqlWorker.postMessage({__evaluate_library__: 'true'}), 100);
     } else {
       // Try to find this expression in the messageArray
       let executingExpressionIndex = messageArray.map((msg,idx) => {
@@ -100,10 +100,19 @@ export function initializeCqlWorker(cqlWorker, isNodeJs=false) {
     }
   };
 
+  /**
+   * Sends a command to the webworker for to evaluate the entire library.
+   * @returns {boolean} - A dummy return value.
+   */
+  const evaluateLibrary = async function() {
+    return evaluateExpression('__evaluate_library__');
+  };
+
   return [
     setupExecution,
     sendPatientBundle,
-    evaluateExpression
+    evaluateExpression,
+    evaluateLibrary
   ];
 }
 
