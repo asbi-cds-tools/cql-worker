@@ -23,10 +23,16 @@ onmessage = async function(rx) {
 
   // For efficiency, first check if this is an expression message, since that is
   // the type called most often.
-  if ((expression = rx.data.expression) != null) {
-    let tx;
+
+   if ((expression = rx.data.expression) != null) {
+
+    let tx,result;
     if (processor.patientSource._bundles.length > 0) {
-      let result = await processor.evaluateExpression(expression);
+      if(expression == '__evaluate_library__'){
+        result = await processor.evaluateLibrary();
+      }else{
+        result = await processor.evaluateExpression(expression);
+      }
       tx = {
         expression: expression,
         result: result
